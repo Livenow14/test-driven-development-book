@@ -12,7 +12,7 @@ public class TestMultiplication {
         Assertions.assertThat(10).isEqualTo(five.amount);
     }
 
-    class Dollar{
+    class Dollar {
         int amount;
 
         Dollar(int amount) {
@@ -22,7 +22,5 @@ public class TestMultiplication {
         public void times(int multiplier) {
             this.amount *= multiplier;
         }
-
     }
-
 }
