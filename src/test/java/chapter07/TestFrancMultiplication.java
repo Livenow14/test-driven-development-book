@@ -1,4 +1,4 @@
-package chpater07;
+package chapter07;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
