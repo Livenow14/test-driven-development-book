@@ -1,8 +1,9 @@
-package chapter13;
+package chapter14;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Hashtable;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -10,31 +11,42 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestSimpleAddition {
 
     @Test
-    @DisplayName("가짜 객체 만들기")
-    public void testSimpleAddition() {
-        Money five = Money.dollar(5);
-        Expression sum = five.plus(five);
+    @DisplayName("2프랑을 달려로 바꾸고 싶다~")
+    public void testReduceMoneyDiffCurrency(){
         Bank bank = new Bank();
-        Money reduced = bank.reduce(sum, "USD");
-        assertThat(Money.dollar(10)).isEqualTo(reduced);
-    }
-
-    @Test
-    @DisplayName("플러스는 Sum을 반환해야 한다. ")
-    public void testPlusReturnsSum() {
-        Money five = Money.dollar(5);
-        Expression result = five.plus(five);
-        Sum sum = (Sum) result;
-        assertThat(five).isEqualTo(sum.augend);
-        assertThat(five).isEqualTo(sum.addend);
-    }
-
-    @Test
-    @DisplayName("reduce 테스트 ")
-    public void testReduceMoney() {
-        Bank bank = new Bank();
-        Money result = bank.reduce(Money.dollar(1), "USD");
+        bank.addRate("CHF", "USD", 2);
+        Money result = bank.reduce(Money.franc(2), "USD");
         assertThat(Money.dollar(1)).isEqualTo(result);
+    }
+
+    @Test
+    @DisplayName("2프랑을 달려로 바꾸고 싶다~")
+    public void testIdentityRate() {
+        assertThat(1).isEqualTo(new Bank().rate("USD", "USD"));
+    }
+
+    private class Pair {
+        private String from;
+        private String to;
+
+        public Pair(String from, String to) {
+            this.from = from;
+            this.to = to;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Pair pair = (Pair) o;
+            return Objects.equals(from, pair.from) &&
+                    Objects.equals(to, pair.to);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(from, to);
+        }
     }
 
     static class Sum implements Expression {
@@ -46,19 +58,32 @@ public class TestSimpleAddition {
             this.addend = addend;
         }
 
-        public Money reduce(String to) {
+        @Override
+        public Money reduce(Bank bank, String to) {
             int amount = augend.amount + addend.amount;
             return new Money(amount, to);
         }
     }
 
     interface Expression {
-        Money reduce(String to);
+        Money reduce(Bank bank, String to);
     }
 
     class Bank {
+        private Hashtable rates = new Hashtable();
+
+        void addRate(String from, String to, int rate) {
+            rates.put(new Pair(from, to), new Integer(rate));
+        }
+
         public Money reduce(Expression source, String to) {
-            return source.reduce(to);
+            return source.reduce(this, to);
+        }
+
+        int rate(String from, String to) {
+            if(from.equals(to)) return 1;
+            Integer rate = (Integer) rates.get(new Pair(from, to));
+            return rate.intValue();
         }
     }
 
@@ -95,8 +120,10 @@ public class TestSimpleAddition {
             return amount + " " + currency;
         }
 
-        public Money reduce(String to){
-            return this;
+        @Override
+        public Money reduce(Bank bank, String to) {
+            int rate = bank.rate(currency, to);
+            return new Money(amount / rate, to);
         }
 
         @Override
